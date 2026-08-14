@@ -22,7 +22,7 @@ A **project-agnostic** multi-agent collaboration workflow skeleton. Any agent sq
 ## Install
 
 ```bash
-dsh plugin --profile web add "github:omdsh-dev/agent-loop-workflow"
+dsh plugin --profile web add "github:LeslieWylie/agent-loop-workflow"
 ```
 
 After restart, load the skill in any session:

@@ -1,14 +1,15 @@
 {
   "name": "@dsh-agent-loop/agent-loop-workflow",
   "version": "0.1.0",
+  "main": "host.js",
   "private": false,
   "description": "通用多 agent 协作工作流骨架：Loop Guard、handoff 格式、风险三档分流、交付顺序、review→收口协议",
   "keywords": ["dsh", "dsh-plugin", "agent-loop", "workflow", "octo", "multi-agent"],
   "license": "MIT",
   "author": "omdsh-dev",
   "dsh": {
-    "profile": {
-      "bundles": ["@deepseek-ai/dsh-base"]
+    "bundle": {
+      "patch": "./cordis.patch.yml"
     }
   },
   "files": ["host.js", "cordis.patch.yml", "README.md", "README.en.md", "LICENSE"]

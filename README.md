@@ -22,7 +22,7 @@
 ## 安装
 
 ```bash
-dsh plugin --profile web add "github:omdsh-dev/agent-loop-workflow"
+dsh plugin --profile web add "github:LeslieWylie/agent-loop-workflow"
 ```
 
 重启后，在任意会话中加载 skill：

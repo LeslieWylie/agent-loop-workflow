@@ -1,7 +1,8 @@
 // agent-loop-workflow — Host half
 // Registers the multi-agent collaboration workflow as a dynamic skill.
 // Install: dsh plugin --profile web add "github:omdsh-dev/dsh-agent-loop-workflow"
-return {
+module.exports = {
+  inject: ['skills'],
   apply(ctx) {
     const skills = ctx.get('skills')
     if (skills === undefined) return
