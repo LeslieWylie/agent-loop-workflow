@@ -1,0 +1,9 @@
+# agent-loop-workflow — 多 agent 协作工作流骨架
+# 注册为动态 skill，任何 agent 可 load 使用
+dsh:
+  profiles:
+    web:
+      plugins:
+        - source: "@dsh-agent-loop/agent-loop-workflow"
+          package: .
+          host: host.js
