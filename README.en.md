@@ -14,7 +14,7 @@ A **project-agnostic** multi-agent collaboration workflow skeleton. Any agent sq
 | **Loop Guard (6 invariants)** | Turn limit, progress stall detection, repeated error fuse, timeout warning, explicit exit gate, single authoritative writer |
 | **Standard Handoff Format** | 6-field handoff template: owner, goal, input, permitted writes, acceptance criteria, failure evidence |
 | **Risk-based Routing** | fast / standard / high lanes, routing to different reviewers based on change scope |
-| **Delivery Sequence** | verify → commit → push → Draft MR → /ready → in_review (fixed order) |
+| **Delivery Sequence** | verify → commit → push → Draft MR/PR → ready signal → in_review (fixed order) |
 | **Review→Close Protocol** | Automatic in_review dispatch, reviewer metadata, reject/retry, escalation |
 | **Anti-loop Protection** | Idempotent issue creation, state-change filtering, human-source-only new task trigger |
 | **Red Lines** | Secret isolation, token permission separation, destructive operation confirmation |
@@ -35,7 +35,7 @@ load agent-loop-workflow
 
 - **Project-agnostic**: Only defines collaboration flow rules. Project-specific knowledge goes in `*-conventions` / `*-engineering` / `*-review-rules` skills
 - **Zero dependencies**: No external services required, only the DSH skill loading mechanism
-- **Complementary to octo-loop**: octo-loop provides Octo infrastructure operations, this skill provides collaboration flow rules
+- **Forge-agnostic**: the skill describes the collaboration flow only. Map its "issue" and "MR" onto whatever tracker and forge you already use — it names none.
 
 ## License
 

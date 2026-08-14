@@ -6,21 +6,53 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import host from '../host.js'
 
-// Strings that must never appear in a published skill payload. Kept in sync
-// with the account-wide desensitization list; update both places together.
-const BANNED = [
-  'mlamp',
-  'mininglamp',
-  'code.mlamp.cn',
-  'llm-gateway.mlamp.cn',
-  'MLAMP_API_KEY',
-  'rlvr',
-  'octoloop',
-  '武垚乐',
-  'wuyaole@mininglamp.com',
-  'wyl516@bupt.edu.cn',
-  'yaolewu@mlamp.cn',
+// Shapes that must never appear in a published skill payload.
+//
+// These are deliberately *patterns*, not a list of literal strings. An earlier
+// version of this file enumerated the exact hostnames, API-key names, personal
+// name and email addresses it was guarding against — which published every one
+// of them to anyone who opened the test, i.e. the guard leaked precisely what
+// it existed to prevent. Patterns catch the same cases, catch new ones nobody
+// thought to enumerate, and disclose nothing themselves.
+//
+// Instance-specific strings (a real name, a specific internal codename) belong
+// in `tests/banned.local.json` — gitignored, optional, an array of strings.
+// It is absent in CI, so CI runs the pattern half only.
+const BANNED_SHAPES = [
+  {
+    what: 'an email address that is not an example/noreply placeholder',
+    re: /[a-z0-9._%+-]+@(?!example\.(?:com|org|net)\b)(?!users\.noreply\.github\.com\b)[a-z0-9.-]+\.[a-z]{2,}/i,
+  },
+  {
+    what: 'a private or corporate-looking hostname',
+    re: /\b(?:[a-z0-9-]+\.)+(?:internal|corp|local|lan|intra)\b/i,
+  },
+  {
+    what: 'a named API key, token or secret constant',
+    re: /\b[A-Z][A-Z0-9]{2,}_(?:API_)?(?:KEY|TOKEN|SECRET)\b/,
+  },
+  {
+    what: 'an inline credential blob',
+    re: /-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk|ghp|gho|glpat)-[A-Za-z0-9_-]{16,}/,
+  },
+  {
+    what: 'a URL carrying inline credentials',
+    re: /\b[a-z][a-z0-9+.-]*:\/\/[^/\s:@]+:[^/\s@]+@/i,
+  },
 ]
+
+async function localBanned() {
+  try {
+    const { readFile } = await import('node:fs/promises')
+    const raw = await readFile(new URL('./banned.local.json', import.meta.url), 'utf8')
+    const list = JSON.parse(raw)
+    assert.ok(Array.isArray(list), 'banned.local.json must be an array of strings')
+    return list
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+}
 
 function makeCtx(skillsStub) {
   return {
@@ -71,13 +103,46 @@ test('registered content carries the expected workflow structure', () => {
   }
 })
 
-test('registered skill payload contains no leaked identity/jargon strings', () => {
+test('registered skill payload leaks no identity, host or credential shapes', async () => {
   const registered = []
   host.apply(makeCtx({ register: (def) => registered.push(def) }))
   const skill = registered[0]
   const haystack = [skill.name, skill.description, skill.whenToUse, skill.content].join('\n')
 
-  for (const needle of BANNED) {
-    assert.ok(!haystack.includes(needle), `found banned string "${needle}" in registered skill payload`)
+  for (const { what, re } of BANNED_SHAPES) {
+    const hit = haystack.match(re)
+    assert.equal(hit, null, hit ? `payload contains ${what}: ${JSON.stringify(hit[0])}` : '')
+  }
+
+  // Optional local layer for strings that cannot be expressed as a shape.
+  // The failure message names the index, never the string, so a CI log from a
+  // machine that *does* have the file still gives nothing away.
+  const extra = await localBanned()
+  extra.forEach((needle, index) => {
+    assert.ok(!haystack.includes(needle), `payload contains banned.local.json[${index}]`)
+  })
+})
+
+test('the guard itself catches what it claims to', () => {
+  // A denylist that matches nothing is indistinguishable from one that works.
+  const samples = [
+    'contact alice@somecorp.com for access',
+    'the box is build-07.corp',
+    'read ACME_API_KEY from the env',
+    'token glpat-ABCDEFGHIJKLMNOPQRSTUV',
+    'clone https://user:hunter2@git.example.org/repo.git',
+  ]
+  samples.forEach((sample, index) => {
+    assert.ok(
+      BANNED_SHAPES.some(({ re }) => re.test(sample)),
+      `sample ${index} slipped through every pattern: ${sample}`,
+    )
+  })
+
+  // ...and does not fire on the payload's legitimate vocabulary.
+  for (const benign of ['GitLab MR', 'loop-state.json', 'verification.json', 'in_review', 'fast/standard/high']) {
+    for (const { what, re } of BANNED_SHAPES) {
+      assert.ok(!re.test(benign), `false positive: "${benign}" matched ${what}`)
+    }
   }
 })
