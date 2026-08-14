@@ -1,5 +1,5 @@
 {
-  "name": "@dsh-agent-loop/agent-loop-workflow",
+  "name": "agent-loop-workflow",
   "version": "0.1.0",
   "main": "host.js",
   "private": false,

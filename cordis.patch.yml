@@ -1,4 +1,4 @@
 # agent-loop-workflow bundle patch.
 - insert:
     - id: agent-loop-workflow
-      name: '@dsh-agent-loop/agent-loop-workflow'
+      name: 'agent-loop-workflow'
