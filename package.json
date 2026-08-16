@@ -28,7 +28,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node tests/host.test.mjs"
+    "test": "node tests/host.test.mjs && node tests/boot.test.mjs"
   },
   "engines": {
     "node": ">=18"
@@ -40,5 +40,9 @@
   "bugs": {
     "url": "https://github.com/LeslieWylie/agent-loop-workflow/issues"
   },
-  "homepage": "https://github.com/LeslieWylie/agent-loop-workflow#readme"
+  "homepage": "https://github.com/LeslieWylie/agent-loop-workflow#readme",
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-skill": "0.1.0-rc.6"
+  }
 }

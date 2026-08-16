@@ -13,8 +13,18 @@ jobs:
         with:
           node-version: 22
 
-      # No install step: the suite uses only node:test and node:assert, and the
-      # package has no dependencies. Nothing to resolve, nothing to cache.
+      # The harness packages are devDependencies rather than optional peers on
+      # purpose: npm does not auto-install optional peers, so declaring them
+      # that way leaves tests/boot.test.mjs unable to resolve a Context and
+      # quietly skipping every run — a green tick over an integration test that
+      # never executed. Look for "--- harness boot ---" in this step's log; if
+      # it says SKIPPED, treat the run as unverified.
+      #
+      # @deepseek-ai/dsh-skill is pinned to an exact version because its npm
+      # `latest` tag points at 0.0.1-rc.1, several minors behind the 0.1.x line
+      # that shipping harnesses actually run. A caret range resolves to the
+      # stale one.
+      - run: npm install
       - run: npm test
 
   # The suite's own guard only covers the *registered payload*. This job covers
