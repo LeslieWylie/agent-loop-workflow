@@ -24,6 +24,13 @@ set -uo pipefail
 B='(^|[^A-Za-z0-9_])'
 E='([^A-Za-z0-9_]|$)'
 
+# Placeholders that are *supposed* to appear. Scrubbed from a line before the
+# rule is re-applied, so a line carrying both a placeholder and a real address
+# is still reported. An earlier version applied this to the "rule<TAB>path:line"
+# summary, by which point the matched text had already been replaced by a line
+# number — so it could never match anything, and the exemption was dead code.
+EXEMPT='[A-Za-z0-9._%+-]+@(example\.(com|org|net)|users\.noreply\.github\.com)'
+
 rules() {
   cat <<RULES
 corporate-hostname|${B}([a-z0-9-]+\.)+(internal|corp|intra|lan)${E}
@@ -40,11 +47,26 @@ scan() {
   local list="$1" label re
   while IFS='|' read -r label re; do
     [ -n "$label" ] || continue
+    # `-H` because grep omits the filename when handed exactly one file, and the
+    # self-test below hands it exactly one. Without it the location/content
+    # split is computed against a line that carries no location, so the
+    # self-test checks a mangled result — it still saw the rule label and
+    # passed, while reporting nonsense positions.
+    #
     # `xargs -a FILE` is GNU-only; the redirect form is portable.
     # `|| true` because grep exits 1 on no-match, which is the normal case here
     # and must not abort the loop under `bash -e`.
-    xargs -0 grep -InE "$re" < "$list" 2>/dev/null \
-      | cut -d: -f1,2 | sed "s/^/${label}\t/" || true
+    xargs -0 grep -IHnE "$re" < "$list" 2>/dev/null \
+      | awk -v re="$re" -v ex="$EXEMPT" -v label="$label" '
+          {
+            # Split "path:line:content" by position, not by field, so colons
+            # inside the content stay inside the content.
+            if (match($0, /^[^:]+:[0-9]+:/) == 0) next
+            location = substr($0, 1, RLENGTH - 1)
+            content  = substr($0, RLENGTH + 1)
+            gsub(ex, "", content)
+            if (content ~ re) print label "\t" location
+          }' || true
   done < <(rules)
 }
 
@@ -76,11 +98,22 @@ while IFS='|' read -r label _; do
     missed=1
   fi
 done < <(rules)
+
+# The exemption fails in the other direction: if it stops working, CI fails on
+# legitimate placeholder addresses until someone gives up and deletes the rule.
+# So it gets a canary of its own, which must produce nothing.
+printf 'contact test@example.com or ci@users.noreply.github.com\n' > "$canary/ok.txt"
+printf '%s\0' "$canary/ok.txt" > "$canary/oklist"
+if [ -n "$(scan "$canary/oklist")" ]; then
+  echo "::error::placeholder addresses are being reported; the exemption is not working"
+  missed=1
+fi
+
 [ "$missed" -eq 0 ] || {
   echo "the scanner is broken; its verdict on the real tree means nothing"
   exit 1
 }
-echo "scanner self-test: every rule fires"
+echo "scanner self-test: every rule fires, placeholders stay exempt"
 
 # --- the real scan -----------------------------------------------------------
 # This script is excluded because it necessarily contains the patterns.
@@ -91,8 +124,10 @@ echo "scanner self-test: every rule fires"
 tracked="$canary/tracked"
 git ls-files -z ':!tools/scan-tree.sh' > "$tracked"
 
-# Placeholder addresses are the one permitted form of the email rule.
-hits="$(scan "$tracked" | grep -vE '@users\.noreply\.github\.com|@example\.(com|org|net)' || true)"
+# The placeholder exemption is applied inside scan(), against the matched line
+# itself. Applying it here would be too late: by this point every match has been
+# reduced to a path and a line number.
+hits="$(scan "$tracked")"
 
 if [ -n "$hits" ]; then
   echo "::error::identifiers found in tracked files"
