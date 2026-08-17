@@ -2,11 +2,17 @@
   "name": "agent-loop-workflow",
   "version": "0.1.1",
   "main": "host.js",
+  "exports": {
+    ".": "./host.js",
+    "./package.json": "./package.json"
+  },
   "scripts": {
-    "test": "node tests/host.test.mjs",
+    "test": "node tests/host.test.mjs && node tests/boot.test.mjs",
     "pack-check": "npm test && npm pack --dry-run"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "private": false,
   "description": "通用多 agent 协作工作流骨架：Loop Guard、handoff 格式、风险三档分流、交付顺序、review→收口协议",
   "keywords": [
@@ -20,8 +26,13 @@
   ],
   "license": "MIT",
   "author": "LeslieWylie",
-  "repository": { "type": "git", "url": "git+https://github.com/LeslieWylie/agent-loop-workflow.git" },
-  "bugs": { "url": "https://github.com/LeslieWylie/agent-loop-workflow/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LeslieWylie/agent-loop-workflow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LeslieWylie/agent-loop-workflow/issues"
+  },
   "homepage": "https://github.com/LeslieWylie/agent-loop-workflow#readme",
   "dsh": {
     "bundle": {
@@ -35,20 +46,6 @@
     "README.en.md",
     "LICENSE"
   ],
-  "scripts": {
-    "test": "node tests/host.test.mjs && node tests/boot.test.mjs"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/LeslieWylie/agent-loop-workflow.git"
-  },
-  "bugs": {
-    "url": "https://github.com/LeslieWylie/agent-loop-workflow/issues"
-  },
-  "homepage": "https://github.com/LeslieWylie/agent-loop-workflow#readme",
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-skill": "0.1.0-rc.6"
