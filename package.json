@@ -8,13 +8,13 @@
   },
   "scripts": {
     "test": "node tests/host.test.mjs && node tests/boot.test.mjs",
-    "pack-check": "npm test && npm pack --dry-run"
+    "pack-check": "npm test && node scripts/check-pack.mjs"
   },
   "engines": {
     "node": ">=18"
   },
   "private": false,
-  "description": "通用多 agent 协作工作流骨架：Loop Guard、handoff 格式、风险三档分流、交付顺序、review→收口协议",
+  "description": "A project-agnostic multi-agent collaboration protocol for the DeepSeek Harness: loop guards that stop runaway agent loops, a six-field handoff format, risk-tiered review routing, and a fixed verify-commit-push-review-close sequence.",
   "keywords": [
     "dsh",
     "dsh-plugin",

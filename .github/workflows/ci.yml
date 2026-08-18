@@ -7,11 +7,21 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      # Report every engine rather than stopping at the first failure — a
+      # half-finished matrix hides which end of the supported range moved.
+      fail-fast: false
+      matrix:
+        # package.json declares `engines: { node: ">=18" }` and npm enforces it
+        # on install, so that claim is made to every installer. Testing only the
+        # newest release left it unverified on the two versions most likely to
+        # break it.
+        node: [18, 20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
 
       # The harness packages are devDependencies rather than optional peers on
       # purpose: npm does not auto-install optional peers, so declaring them
@@ -32,6 +42,25 @@ jobs:
           # rather than printing SKIPPED and passing. A bare clone without the
           # harness installed can still run `npm test` normally.
           DSH_BOOT_STRICT: '1'
+
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Deliberately not `npm pack --dry-run`. That exits 0 when a `files` entry
+      # resolves to nothing — measured on npm 11, a bogus entry produced an
+      # identical tarball, identical exit 0, no warning — so as a gate it reads
+      # the same whether the package is intact or broken. It matters here because
+      # `host.js` is packed regardless (it is `main`) while `cordis.patch.yml` is
+      # not, and that file is what tells a profile to load this plugin at all:
+      # lose it and the package installs, imports, and silently does nothing.
+      # check-pack.mjs was proved by planting that entry — exit 1 with it, exit 0
+      # without.
+      - run: node scripts/check-pack.mjs
 
   # The suite's own guard only covers the *registered payload*. This job covers
   # the rest of the tree — README prose, the patch file, package metadata, and
